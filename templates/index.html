@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SmartPrep — AI Mock Interview</title>
+<title>AceIt — AI Mock Interview</title>
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -713,7 +713,7 @@
 ══════════════════════════════════════════ -->
 <div id="welcome" class="screen active">
   <div class="logo-badge">⚡ AI-Powered</div>
-  <h1 class="hero-title">SmartPrep<br><span>Mock Interview</span></h1>
+  <h1 class="hero-title">AceIt<br><span>Mock Interview</span></h1>
   <p class="hero-sub">Practice interviews for school subjects with instant AI feedback, facial emotion analysis, and voice responses.</p>
 
   <div class="setup-card">
@@ -762,7 +762,7 @@
 <div id="interview" class="screen">
   <!-- Header -->
   <header class="interview-header">
-    <div class="header-brand">SmartPrep</div>
+    <div class="header-brand">AceIt</div>
     <div class="header-info">
       <div class="header-stat">
         <div class="val" id="h-subject">Math</div>
@@ -1125,12 +1125,73 @@ function startTimer() {
 
 // ── Webcam ─────────────────────────────────────────────────────────────────────
 async function startWebcam() {
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({ video:true, audio:false });
-    document.getElementById('webcam').srcObject = stream;
-  } catch(e) {
-    console.log('Webcam not available:', e);
+  const camContainer = document.querySelector('.cam-container');
+  const video = document.getElementById('webcam');
+  const camStatus = document.querySelector('.cam-status');
+
+  // Check if mediaDevices API exists
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    showCamError(camContainer, '⚠️ Camera API not supported in this browser.<br>Please use Chrome or Firefox.');
+    return;
   }
+
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+    video.srcObject = stream;
+    video.style.display = 'block';
+    camStatus.innerHTML = '<div class="cam-dot"></div>LIVE';
+    camStatus.style.color = 'var(--accent3)';
+  } catch(e) {
+    console.warn('Webcam error:', e.name, e.message);
+
+    if (e.name === 'NotAllowedError' || e.name === 'PermissionDeniedError') {
+      showCamError(camContainer,
+        '🔒 Camera permission denied.<br><small>Click the 🔒 icon in your browser address bar → Allow Camera → Refresh the page.</small>');
+    } else if (e.name === 'NotFoundError' || e.name === 'DevicesNotFoundError') {
+      showCamError(camContainer,
+        '📷 No camera found.<br><small>Please connect a webcam and refresh.</small>');
+    } else if (e.name === 'NotReadableError') {
+      showCamError(camContainer,
+        '⚠️ Camera is in use by another app.<br><small>Close Zoom, Teams, or other apps using the camera.</small>');
+    } else {
+      showCamError(camContainer,
+        '⚠️ Camera unavailable.<br><small>The interview will still work — emotion analysis will be simulated.</small>');
+    }
+  }
+}
+
+function showCamError(container, message) {
+  const video = document.getElementById('webcam');
+  video.style.display = 'none';
+  document.querySelector('.cam-status').style.display = 'none';
+
+  // Remove existing error if any
+  const existing = container.querySelector('.cam-error-msg');
+  if (existing) existing.remove();
+
+  const errDiv = document.createElement('div');
+  errDiv.className = 'cam-error-msg';
+  errDiv.style.cssText = `
+    position:absolute; inset:0;
+    display:flex; flex-direction:column;
+    align-items:center; justify-content:center;
+    text-align:center; padding:1.2rem;
+    background: #0a0e1a;
+    color: var(--text-muted);
+    font-size: .8rem;
+    line-height: 1.6;
+  `;
+  errDiv.innerHTML = `
+    <span style="font-size:2.5rem;margin-bottom:.8rem">📷</span>
+    <span>${message}</span>
+    <button onclick="startWebcam()" style="
+      margin-top:1rem; padding:.4rem 1rem;
+      background:rgba(0,229,255,0.1); border:1px solid var(--accent);
+      border-radius:8px; color:var(--accent); cursor:pointer;
+      font-size:.75rem; font-family:'Sora',sans-serif;
+    ">🔄 Retry Camera</button>
+  `;
+  container.appendChild(errDiv);
 }
 
 // ── Emotion simulation (visual only) ─────────────────────────────────────────
@@ -1266,11 +1327,12 @@ function getGradeColor(g) {
   return '#ef4444';
 }
 
-function restart() {
-  clearInterval(timerInterval);
-  clearInterval(emotionInterval);
-  switchScreen('welcome');
-}
+  function restart() {
+    clearInterval(timerInterval);
+    clearInterval(emotionInterval);
+    switchScreen('welcome');
+  }
 </script>
 </body>
 </html>
+
